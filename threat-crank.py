@@ -102,14 +102,14 @@ def gephi(jsonobjects, debugflag, actorspattern, industriespattern, regionspatte
                                           else:
                                               print(jsonobject["name"] + ";" + jsonobject["name"] + "-" + phase["phase_name"])
                                           if "external_references" in jsonobject3.keys():
-                                              for datasource in jsonobject3["external_references"]:
-                                                  if "source_name" in datasource.keys():
-                                                      if datasource["source_name"] == "mitre-attack" or datasource["source_name"] != "capec":
-                                                          if "external_id" in datasource.keys():
+                                              for referenceobject in jsonobject3["external_references"]:
+                                                  if "source_name" in referenceobject.keys():
+                                                      if referenceobject["source_name"] == "mitre-attack" or referenceobject["source_name"] != "capec":
+                                                          if "external_id" in referenceobject.keys():
                                                               if gephitype == "unified":
-                                                                  print(phase["phase_name"] + ";" + datasource["external_id"])
+                                                                  print(phase["phase_name"] + ";" + referenceobject["external_id"])
                                                               else:
-                                                                  print(jsonobject["name"] + "-" + phase["phase_name"] + ";" + datasource["external_id"])
+                                                                  print(jsonobject["name"] + "-" + phase["phase_name"] + ";" + referenceobject["external_id"])
 
 def wargame(gamephasenamelist, jsonobjects, debugflag, verboseflag, actorspattern, industriespattern, regionspattern, platformspattern, maximumrolls):
     print("# Shall we play a game?\n")
@@ -143,12 +143,12 @@ def roll(gamephasenamelist, jsonobjects, debugflag, verboseflag, actorspattern, 
                                           if "phase_name" in phase.keys():
                                               if phase["phase_name"] == gamephasename:
                                                   if "external_references" in jsonobject3.keys():
-                                                      for datasource in jsonobject3["external_references"]:
-                                                          if "source_name" in datasource.keys():
-                                                              if datasource["source_name"] == "mitre-attack" or datasource["source_name"] != "capec":
-                                                                  if "external_id" in datasource.keys():
-                                                                      attacknamelist[datasource["external_id"]] = jsonobject3["name"]
-                                                                      attackdescriptionlist[datasource["external_id"]] = jsonobject3["description"].replace("###", "####")
+                                                      for referenceobject in jsonobject3["external_references"]:
+                                                          if "source_name" in referenceobject.keys():
+                                                              if referenceobject["source_name"] == "mitre-attack" or referenceobject["source_name"] != "capec":
+                                                                  if "external_id" in referenceobject.keys():
+                                                                      attacknamelist[referenceobject["external_id"]] = jsonobject3["name"]
+                                                                      attackdescriptionlist[referenceobject["external_id"]] = jsonobject3["description"].replace("###", "####")
         if attacknamelist and attackdescriptionlist:
             gamephaseattackidlist[gamephasename] = random.choice(list(attacknamelist.keys()))
             gamephaseattacknamelist[gamephasename] = attacknamelist[gamephaseattackidlist[gamephasename]]
@@ -281,7 +281,7 @@ def buildReport(jsonobjects, debugflag, verboseflag, reportreferencelist):
                         if "x_mitre_platforms" in jsonobject.keys():
                             for platformname in jsonobject["x_mitre_platforms"]:
                                 if platformname not in platformlist.keys():
-                                    platformlist[platform] = 0
+                                    platformlist[platformname] = 0
                                 platformlist[platformname] += 1
                         if "external_references" in jsonobject.keys():
                             for referenceobject in jsonobject["external_references"]:
@@ -289,7 +289,7 @@ def buildReport(jsonobjects, debugflag, verboseflag, reportreferencelist):
                                     if referenceobject["source_name"] != "mitre-attack" and referenceobject["source_name"] != "capec":
                                         if "url" in referenceobject.keys():
                                             if "description" in referenceobject.keys():
-                                                toolreferencelist[datasource["url"]] = datasource["description"]
+                                                toolreferencelist[referenceobject["url"]] = referenceobject["description"]
     return (attacklist, phaselist, platformlist, defencelist, telemetrylist, referencelist, toollist, toolreferencelist)
     
 print(os.path.basename(__file__) + " 0.2")
