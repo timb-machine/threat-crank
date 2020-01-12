@@ -20,7 +20,7 @@ actorspattern = ".*"
 industriespattern = ".*"
 regionspattern = ".*"
 platformspattern = ".*"
-gamephasenamelist = ["initial-access", "execution", "persistence", "privilege-escalation", "defence-evasion", "credential-access", "discovery", "command-and-control", "exfiltration", "impact"]
+gamephasenamelist = ["initial-access", "execution", "persistence", "privilege-escalation", "defense-evasion", "credential-access", "discovery", "command-and-control", "exfiltration", "impact"]
 
 def usage(commandname):
     print("usage: " + os.path.basename(__file__) + " [-G <\"unified\" | \"discrete\"> | -W <maxiumumrolls>] -A <attackurl> [-d] [-v] [-a <actorspattern> -i <industriespattern>] [-r <regionspattern>] [-p <platformspattern>]")
