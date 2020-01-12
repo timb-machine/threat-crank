@@ -40,23 +40,23 @@ def filterActor(jsonobjects, debugflag, actorspattern, industriespattern, region
     newjsonobjects = []
     for jsonobject in jsonobjects["objects"]:
         if jsonobject["type"] == "intrusion-set":
-            actormatchflag = False
+            matchflag = False
             if re.match(actorspattern, jsonobject["name"], re.IGNORECASE | re.MULTILINE):
                 if debugflag == True:
                     print("I: actor match " + jsonobject["name"])
-                actormatchflag = True
+                matchflag = True
             if "aliases" in jsonobject.keys():
-                for alias in jsonobject["aliases"]:
-                    if re.match(actorspattern, alias, re.IGNORECASE | re.MULTILINE):
+                for actoralias in jsonobject["aliases"]:
+                    if re.match(actorspattern, actoralias, re.IGNORECASE | re.MULTILINE):
                         if debugflag == True:
-                            print("I: actor match " + alias)
-                        actormatchflag = actormatchflag or True
+                            print("I: actor match " + actoralias)
+                        matchflag = matchflag or True
             if "description" in jsonobject.keys():
                 if re.match(industriespattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE) and re.match(regionspattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE):
                     if debugflag == True:
                         print("I: industry/region match " + jsonobject["description"])
-                    actormatchflag = actormatchflag and True
-            if actormatchflag == True:
+                    matchflag = matchflag and True
+            if matchflag == True:
                 newjsonobjects.append(jsonobject)
     return newjsonobjects
 
@@ -72,17 +72,17 @@ def filterToolPlatform(jsonobjects, debugflag, targetreference, platformspattern
 def filterPlatform(jsonobjects, debugflag, objecttype, targetreference, platformspattern):
     newjsonobjects = []
     for jsonobject in jsonobjects["objects"]:
-        platformmatchflag = False
+        matchflag = False
         if jsonobject["type"] == objecttype:
             if targetreference == jsonobject["id"]:
                 if "x_mitre_platforms" in jsonobject.keys():
-                    for platform in jsonobject["x_mitre_platforms"]:
-                        if platformmatchflag == False:
-                            if re.match(platformspattern, platform, re.IGNORECASE | re.MULTILINE):
+                    for platformname in jsonobject["x_mitre_platforms"]:
+                        if matchflag == False:
+                            if re.match(platformspattern, platformname, re.IGNORECASE | re.MULTILINE):
                                 if debugflag == True:
-                                    print("I: platform match " + platform)
-                                platformmatchflag = platformmatchflag or True
-                    if platformmatchflag == True:
+                                    print("I: platform match " + platformname)
+                                matchflag = matchflag or True
+                    if matchflag == True:
                         newjsonobjects.append(jsonobject)
     return newjsonobjects
 
@@ -159,7 +159,7 @@ def roll(gamephasenamelist, jsonobjects, debugflag, verboseflag, actorspattern, 
 
 def report(jsonobjects, debugflag, verboseflag, actorspattern, industriespattern, regionspattern, platformspattern):
     (reportdescriptionlist, reportreferencelist) = filterReportReferences(jsonobjects, debugflag, verboseflag, actorspattern, industriespattern, regionspattern, platformspattern)
-    (attacklist, phaselist, platformlist, defencelist, telemetrylist, enrichmentreferencelist, toollist, toolreferencelist) = buildReport(jsonobjects, debugflag, verboseflag, reportreferencelist)
+    (attacklist, phaselist, platformlist, defencelist, telemetrylist, referencelist, toollist, toolreferencelist) = buildReport(jsonobjects, debugflag, verboseflag, reportreferencelist)
     print("# Threat groups\n")
     for reportreferencename in reportdescriptionlist.keys():
         print("* " + reportreferencename)
@@ -187,8 +187,8 @@ def report(jsonobjects, debugflag, verboseflag, actorspattern, industriespattern
        print("* " + telemetryname + " - " + str(telemetrylist[telemetryname]))
     print()
     print("# Review the following attack references\n")
-    for enrichmentreferenceurl in enrichmentreferencelist.keys():
-       print("* " + enrichmentreferenceurl + " - " + str(enrichmentreferencelist[enrichmentreferenceurl]))
+    for referenceurl in referencelist.keys():
+       print("* " + referenceurl + " - " + referencelist[referenceurl])
     print()
     print("# Validate the following tools and malware\n")
     for toolname in toollist.keys():
@@ -196,7 +196,7 @@ def report(jsonobjects, debugflag, verboseflag, actorspattern, industriespattern
     print()
     print("# Review the following tool and malware references\n")
     for toolreferenceurl in toolreferencelist.keys():
-       print("* " + toolreferenceurl + " - " + str(toolreferencelist[toolreferenceurl]))
+       print("* " + toolreferenceurl + " - " + toolreferencelist[toolreferenceurl])
     print()
 
 def filterReportReferences(jsonobjects, debugflag, verboseflag, actorspattern, industriespattern, regionspattern, platformspattern):
@@ -230,7 +230,7 @@ def buildReport(jsonobjects, debugflag, verboseflag, reportreferencelist):
     platformlist = {}
     defencelist = {}
     telemetrylist = {}
-    enrichmentreferencelist = {}
+    referencelist = {}
     toollist = {}
     toolreferencelist = {}
     for reportreferencename in reportreferencelist.keys():
@@ -244,32 +244,32 @@ def buildReport(jsonobjects, debugflag, verboseflag, reportreferencelist):
                             attacklist[jsonobject["name"]] = 0
                         attacklist[jsonobject["name"]] += 1
                         if "kill_chain_phases" in jsonobject.keys():
-                            for phase in jsonobject["kill_chain_phases"]:
-                                if phase["phase_name"] not in phaselist.keys():
-                                    phaselist[phase["phase_name"]] = 0
-                                phaselist[phase["phase_name"]] += 1
+                            for phaseobject in jsonobject["kill_chain_phases"]:
+                                if phaseobject["phase_name"] not in phaselist.keys():
+                                    phaselist[phaseobject["phase_name"]] = 0
+                                phaselist[phaseobject["phase_name"]] += 1
                         if "x_mitre_platforms" in jsonobject.keys():
-                            for platform in jsonobject["x_mitre_platforms"]:
-                                if platform not in platformlist.keys():
-                                    platformlist[platform] = 0
-                                platformlist[platform] += 1
+                            for platformname in jsonobject["x_mitre_platforms"]:
+                                if platformname not in platformlist.keys():
+                                    platformlist[platformname] = 0
+                                platformlist[platformname] += 1
                         if "x_mitre_defense_bypassed" in jsonobject.keys():
-                            for defence in jsonobject["x_mitre_defense_bypassed"]:
-                                if defence not in defencelist.keys():
-                                    defencelist[defence] = 0
-                                defencelist[defence] += 1
+                            for defencename in jsonobject["x_mitre_defense_bypassed"]:
+                                if defencename not in defencelist.keys():
+                                    defencelist[defencename] = 0
+                                defencelist[defencename] += 1
                         if "x_mitre_data_sources" in jsonobject.keys():
-                            for telemetry in jsonobject["x_mitre_data_sources"]:
-                                if telemetry not in telemetrylist.keys():
-                                    telemetrylist[telemetry] = 0
-                                telemetrylist[telemetry] += 1
+                            for telemetryname in jsonobject["x_mitre_data_sources"]:
+                                if telemetryname not in telemetrylist.keys():
+                                    telemetrylist[telemetryname] = 0
+                                telemetrylist[telemetryname] += 1
                         if "external_references" in jsonobject.keys():
-                            for datasource in jsonobject["external_references"]:
-                                if "source_name" in datasource.keys():
-                                    if datasource["source_name"] != "mitre-attack" and datasource["source_name"] != "capec":
-                                        if "url" in datasource.keys():
-                                            if "description" in datasource.keys():
-                                                enrichmentreferencelist[datasource["url"]] = datasource["description"]
+                            for referenceobject in jsonobject["external_references"]:
+                                if "source_name" in referenceobject.keys():
+                                    if referenceobject["source_name"] != "mitre-attack" and referenceobject["source_name"] != "capec":
+                                        if "url" in referenceobject.keys():
+                                            if "description" in referenceobject.keys():
+                                                referencelist[referenceobject["url"]] = referenceobject["description"]
             if jsonobject["type"] == "malware" or jsonobject["type"] == "tool":
                 for reportreferenceid in reportreferencelist[reportreferencename]:
                     if jsonobject["id"] == reportreferenceid:
@@ -279,18 +279,18 @@ def buildReport(jsonobjects, debugflag, verboseflag, reportreferencelist):
                             toollist[jsonobject["name"]] = 0
                         toollist[jsonobject["name"]] += 1
                         if "x_mitre_platforms" in jsonobject.keys():
-                            for platform in jsonobject["x_mitre_platforms"]:
-                                if platform not in platformlist.keys():
+                            for platformname in jsonobject["x_mitre_platforms"]:
+                                if platformname not in platformlist.keys():
                                     platformlist[platform] = 0
-                                platformlist[platform] += 1
+                                platformlist[platformname] += 1
                         if "external_references" in jsonobject.keys():
-                            for datasource in jsonobject["external_references"]:
-                                if "source_name" in datasource.keys():
-                                    if datasource["source_name"] != "mitre-attack" and datasource["source_name"] != "capec":
-                                        if "url" in datasource.keys():
-                                            if "description" in datasource.keys():
+                            for referenceobject in jsonobject["external_references"]:
+                                if "source_name" in referenceobject.keys():
+                                    if referenceobject["source_name"] != "mitre-attack" and referenceobject["source_name"] != "capec":
+                                        if "url" in referenceobject.keys():
+                                            if "description" in referenceobject.keys():
                                                 toolreferencelist[datasource["url"]] = datasource["description"]
-    return (attacklist, phaselist, platformlist, defencelist, telemetrylist, enrichmentreferencelist, toollist, toolreferencelist)
+    return (attacklist, phaselist, platformlist, defencelist, telemetrylist, referencelist, toollist, toolreferencelist)
     
 print(os.path.basename(__file__) + " 0.2")
 try:
