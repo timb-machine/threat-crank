@@ -22,11 +22,11 @@ platformspattern = ".*"
 gamephasenamelist = ["initial-access", "execution", "persistence", "privilege-escalation", "defence-evasion", "credential-access", "discovery", "command-and-control", "exfiltration", "impact"]
 
 def usage(commandname):
-    print("usage: " + os.path.basename(__file__) + " [-G <\"unified\" | \"discrete\"> | -W <maxiumumrolls>] -a <attackurl> [-d] [-v] [-i <industriespattern>] [-r <regionspattern>] [-p <platformspattern>]")
+    print("usage: " + os.path.basename(__file__) + " [-G <\"unified\" | \"discrete\"> | -W <maxiumumrolls>] -A <attackurl> [-d] [-v] [-i <industriespattern>] [-r <regionspattern>] [-p <platformspattern>]")
     print()
     print("	-d - debug mode, toggles additional output")
     print("	-v - verbose mode, toggles descriptions in non-gephi mode")
-    print("	-a - use a different ATT&CK source")
+    print("	-A - use a different ATT&CK source")
     print("	-G - gephi mode, dump node pairs for directed graph of matching ATT&CK kill chains for consumption by Gephi")
     print("	-W - wargame mode, construct a number of randomised attack trees")
     print("	-i - constrain ATT&CK kill chains to specific industries")
@@ -275,7 +275,7 @@ def buildReport(jsonobjects, debugflag, verboseflag, reportreferencelist):
     
 print(os.path.basename(__file__) + " 0.2")
 try:
-    options, arguments = getopt.getopt(sys.argv[1:], "dva:G:W:i:r:p:", ["debug", "verbose", "attackurl=", "gephi=", "wargame=", "industry=", "region=", "platform="])
+    options, arguments = getopt.getopt(sys.argv[1:], "dvA:G:W:i:r:p:", ["debug", "verbose", "attackurl=", "gephi=", "wargame=", "industry=", "region=", "platform="])
 except:
     usage(os.path.basename(__file__))
 for option, value in options:
@@ -283,7 +283,7 @@ for option, value in options:
         debugflag = True
     if option == "-v" or option == "--verbose":
         verboseflag = True
-    if option == "-a" or option == "--attackurl":
+    if option == "-A" or option == "--attackurl":
         attackurl = value
     if option == "-G" or option == "--gephi":
         gephiflag = True
