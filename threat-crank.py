@@ -40,21 +40,24 @@ def findActor(jsonobjects, debugflag, actorspattern, industriespattern, regionsp
     newjsonobjects = []
     for jsonobject in jsonobjects["objects"]:
         if jsonobject["type"] == "intrusion-set":
+            actormatchflag = False
             if re.match(actorspattern, jsonobject["name"], re.IGNORECASE | re.MULTILINE):
                 if debugflag == True:
                     print("I: actor match " + jsonobject["name"])
-                newjsonobjects.append(jsonobject)
+                actormatchflag = True
             if "aliases" in jsonobject.keys():
                 for alias in jsonobject["aliases"]:
                     if re.match(actorspattern, alias, re.IGNORECASE | re.MULTILINE):
                         if debugflag == True:
                             print("I: actor match " + alias)
-                        newjsonobjects.append(jsonobject)
+                        actormatchflag = actormatchflag or True
             if "description" in jsonobject.keys():
                 if re.match(industriespattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE) and re.match(regionspattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE):
                     if debugflag == True:
                         print("I: industry/region match " + jsonobject["description"])
-                    newjsonobjects.append(jsonobject)
+                    actormatchflag = actormatchflag and True
+            if actormatchflag == True:
+                newjsonobjects.append(jsonobject)
     return newjsonobjects
 
 def findAttackPlatform(jsonobjects, debugflag, targetreference, platformspattern):
@@ -69,14 +72,18 @@ def findToolPlatform(jsonobjects, debugflag, targetreference, platformspattern):
 def findPlatform(jsonobjects, debugflag, objecttype, targetreference, platformspattern):
     newjsonobjects = []
     for jsonobject in jsonobjects["objects"]:
+        platformmatchflag = False
         if jsonobject["type"] == objecttype:
             if targetreference == jsonobject["id"]:
                 if "x_mitre_platforms" in jsonobject.keys():
                     for platform in jsonobject["x_mitre_platforms"]:
-                        if re.match(platformspattern, platform, re.IGNORECASE | re.MULTILINE):
-                            if debugflag == True:
-                                print("I: platform match " + platform)
-                            newjsonobjects.append(jsonobject)
+                        if platformmatchflag == False:
+                            if re.match(platformspattern, platform, re.IGNORECASE | re.MULTILINE):
+                                if debugflag == True:
+                                    print("I: platform match " + platform)
+                                platformmatchflag = platformmatchflag or True
+                    if platformmatchflag == True:
+                        newjsonobjects.append(jsonobject)
     return newjsonobjects
 
 
