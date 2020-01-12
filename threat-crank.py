@@ -16,32 +16,34 @@ gephiflag = False
 gephitype = "unified"
 wargameflag = False
 maximumrolls = 1
+actorspattern = ".*"
 industriespattern = ".*"
 regionspattern = ".*"
 platformspattern = ".*"
 gamephasenamelist = ["initial-access", "execution", "persistence", "privilege-escalation", "defence-evasion", "credential-access", "discovery", "command-and-control", "exfiltration", "impact"]
 
 def usage(commandname):
-    print("usage: " + os.path.basename(__file__) + " [-G <\"unified\" | \"discrete\"> | -W <maxiumumrolls>] -A <attackurl> [-d] [-v] [-i <industriespattern>] [-r <regionspattern>] [-p <platformspattern>]")
+    print("usage: " + os.path.basename(__file__) + " [-G <\"unified\" | \"discrete\"> | -W <maxiumumrolls>] -A <attackurl> [-d] [-v] [-a <actorspattern> -i <industriespattern>] [-r <regionspattern>] [-p <platformspattern>]")
     print()
     print("	-d - debug mode, toggles additional output")
     print("	-v - verbose mode, toggles descriptions in non-gephi mode")
     print("	-A - use a different ATT&CK source")
     print("	-G - gephi mode, dump node pairs for directed graph of matching ATT&CK kill chains for consumption by Gephi")
     print("	-W - wargame mode, construct a number of randomised attack trees")
+    print("	-a - constrain ATT&CK kill chains to specific actors")
     print("	-i - constrain ATT&CK kill chains to specific industries")
     print("	-r - constrain ATT&CK kill chains to specific regions")
     print("	-p - constrain ATT&CK kill chains to specific platforms")
     sys.exit(1)
 
-def findActor(jsonobjects, debugflag, industriespattern, regionspattern):
+def findActor(jsonobjects, debugflag, actorspattern, industriespattern, regionspattern):
     newjsonobjects = []
     for jsonobject in jsonobjects["objects"]:
         if jsonobject["type"] == "intrusion-set":
             if "description" in jsonobject.keys():
-                if re.match(industriespattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE) and re.match(regionspattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE):
+                if re.match(actorspattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE) and re.match(industriespattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE) and re.match(regionspattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE):
                     if debugflag == True:
-                        print("I: industry/region match " + jsonobject["description"])
+                        print("I: actor/industry/region match " + jsonobject["description"])
                     newjsonobjects.append(jsonobject)
     return newjsonobjects
 
@@ -68,8 +70,8 @@ def findPlatform(jsonobjects, debugflag, objecttype, targetreference, platformsp
     return newjsonobjects
 
 
-def gephi(jsonobjects, debugflag, industriespattern, regionspattern, platformspattern, gephitype):
-    for jsonobject in findActor(jsonobjects, debugflag, regionspattern, platformspattern):
+def gephi(jsonobjects, debugflag, actorspattern, industriespattern, regionspattern, platformspattern, gephitype):
+    for jsonobject in findActor(jsonobjects, debugflag, actorspattern, regionspattern, platformspattern):
          for jsonobject2 in jsonobjects["objects"]:
              if jsonobject2["type"] == "relationship":
                  if "source_ref" in jsonobject2.keys():
@@ -92,11 +94,11 @@ def gephi(jsonobjects, debugflag, industriespattern, regionspattern, platformspa
                                                               else:
                                                                   print(jsonobject["name"] + "-" + phase["phase_name"] + ";" + datasource["external_id"])
 
-def wargame(gamephasenamelist, jsonobjects, debugflag, verboseflag, industriespattern, regionspattern, platformspattern, maximumrolls):
+def wargame(gamephasenamelist, jsonobjects, debugflag, verboseflag, actorspattern, industriespattern, regionspattern, platformspattern, maximumrolls):
     print("# Shall we play a game?\n")
     for rollcounter in range(0, maximumrolls):
         print("## Roll #" + str(rollcounter + 1) + "\n")
-        (gameidlist, gamenamelist, gamedescriptionlist) = roll(gamephasenamelist, jsonobjects, debugflag, verboseflag, industriespattern, regionspattern, platformspattern)
+        (gameidlist, gamenamelist, gamedescriptionlist) = roll(gamephasenamelist, jsonobjects, debugflag, verboseflag, actorspattern, industriespattern, regionspattern, platformspattern)
         for gamephasename in gamephasenamelist:
             print("### " + gamephasename + "\n")
             if gamephasename in gameidlist.keys() and gamephasename in gamenamelist.keys() and gamephasename in gamedescriptionlist.keys():
@@ -106,14 +108,14 @@ def wargame(gamephasenamelist, jsonobjects, debugflag, verboseflag, industriespa
             else:
                 print(gamenamelist[gamephasename] + "\n")
 
-def roll(gamephasenamelist, jsonobjects, debugflag, verboseflag, industriespattern, regionspattern, platformspattern):
+def roll(gamephasenamelist, jsonobjects, debugflag, verboseflag, actorspattern, industriespattern, regionspattern, platformspattern):
     gamephaseattackidlist = {}
     gamephaseattacknamelist = {}
     gamephaseattackdescriptionlist = {}
     for gamephasename in gamephasenamelist:
         attacknamelist = {}
         attackdescriptionlist = {}
-        for jsonobject in findActor(jsonobjects, debugflag, regionspattern, platformspattern):
+        for jsonobject in findActor(jsonobjects, debugflag, actorspattern, industriespattern, regionspattern):
              for jsonobject2 in jsonobjects["objects"]:
                  if jsonobject2["type"] == "relationship":
                      if "source_ref" in jsonobject2.keys():
@@ -138,8 +140,8 @@ def roll(gamephasenamelist, jsonobjects, debugflag, verboseflag, industriespatte
             gamephaseattacknamelist[gamephasename] = "E: You have been eaten by a grue!"
     return (gamephaseattackidlist, gamephaseattacknamelist, gamephaseattackdescriptionlist)
 
-def report(jsonobjects, debugflag, verboseflag, industriespattern, regionspattern, platformspattern):
-    (reportdescriptionlist, reportreferencelist) = findReportReferences(jsonobjects, debugflag, verboseflag, industriespattern, regionspattern, platformspattern)
+def report(jsonobjects, debugflag, verboseflag, actorspattern, industriespattern, regionspattern, platformspattern):
+    (reportdescriptionlist, reportreferencelist) = findReportReferences(jsonobjects, debugflag, verboseflag, actorspattern, industriespattern, regionspattern, platformspattern)
     (attacklist, phaselist, platformlist, defencelist, telemetrylist, enrichmentreferencelist, toollist, toolreferencelist) = buildReport(jsonobjects, debugflag, verboseflag, reportreferencelist)
     print("# Threat groups\n")
     for reportreferencename in reportdescriptionlist.keys():
@@ -180,10 +182,10 @@ def report(jsonobjects, debugflag, verboseflag, industriespattern, regionspatter
        print("* " + toolreferenceurl + " - " + str(toolreferencelist[toolreferenceurl]))
     print()
 
-def findReportReferences(jsonobjects, debugflag, verboseflag, industriespattern, regionspattern, platformspattern):
+def findReportReferences(jsonobjects, debugflag, verboseflag, actorspattern, industriespattern, regionspattern, platformspattern):
     reportdescriptionlist = {}
     reportreferencelist = {}
-    for jsonobject in findActor(jsonobjects, debugflag, regionspattern, platformspattern):
+    for jsonobject in findActor(jsonobjects, debugflag, actorspattern, industriespattern, regionspattern):
          for jsonobject2 in jsonobjects["objects"]:
              if jsonobject2["type"] == "relationship":
                  if "source_ref" in jsonobject2.keys():
@@ -275,7 +277,7 @@ def buildReport(jsonobjects, debugflag, verboseflag, reportreferencelist):
     
 print(os.path.basename(__file__) + " 0.2")
 try:
-    options, arguments = getopt.getopt(sys.argv[1:], "dvA:G:W:i:r:p:", ["debug", "verbose", "attackurl=", "gephi=", "wargame=", "industry=", "region=", "platform="])
+    options, arguments = getopt.getopt(sys.argv[1:], "dvA:G:W:a:i:r:p:", ["debug", "verbose", "attackurl=", "gephi=", "wargame=", "actor=", "industry=", "region=", "platform="])
 except:
     usage(os.path.basename(__file__))
 for option, value in options:
@@ -293,6 +295,9 @@ for option, value in options:
         wargameflag = True
         if value:
             maximumrolls = int(value)
+    if option == "-a" or option == "--actor":
+        actorspattern = value
+        print("I: searching for actors that match " + actorspattern)
     if option == "-i" or option == "--industry":
         industriespattern = value
         print("I: searching for industries that match " + industriespattern)
@@ -306,9 +311,9 @@ print("I: using " + attackurl)
 with urllib.request.urlopen(attackurl) as url:
     jsonobjects = json.loads(url.read().decode())
     if gephiflag == True:
-        gephi(jsonobjects, debugflag, industriespattern, regionspattern, platformspattern, gephitype)
+        gephi(jsonobjects, debugflag, actorspattern, industriespattern, regionspattern, platformspattern, gephitype)
     else:
         if wargameflag == True:
-            wargame(gamephasenamelist, jsonobjects, debugflag, verboseflag, industriespattern, regionspattern, platformspattern, maximumrolls)
+            wargame(gamephasenamelist, jsonobjects, debugflag, verboseflag, actorspattern, industriespattern, regionspattern, platformspattern, maximumrolls)
         else:
-            report(jsonobjects, debugflag, verboseflag, industriespattern, regionspattern, platformspattern)
+            report(jsonobjects, debugflag, verboseflag, actorspattern, industriespattern, regionspattern, platformspattern)
