@@ -40,10 +40,20 @@ def findActor(jsonobjects, debugflag, actorspattern, industriespattern, regionsp
     newjsonobjects = []
     for jsonobject in jsonobjects["objects"]:
         if jsonobject["type"] == "intrusion-set":
+            if re.match(actorspattern, jsonobject["name"], re.IGNORECASE | re.MULTILINE):
+                if debugflag == True:
+                    print("I: actor match " + jsonobject["name"])
+                newjsonobjects.append(jsonobject)
+            if "aliases" in jsonobject.keys():
+                for alias in jsonobject["aliases"]:
+                    if re.match(actorspattern, alias, re.IGNORECASE | re.MULTILINE):
+                        if debugflag == True:
+                            print("I: actor match " + alias)
+                        newjsonobjects.append(jsonobject)
             if "description" in jsonobject.keys():
-                if re.match(actorspattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE) and re.match(industriespattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE) and re.match(regionspattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE):
+                if re.match(industriespattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE) and re.match(regionspattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE):
                     if debugflag == True:
-                        print("I: actor/industry/region match " + jsonobject["description"])
+                        print("I: industry/region match " + jsonobject["description"])
                     newjsonobjects.append(jsonobject)
     return newjsonobjects
 
