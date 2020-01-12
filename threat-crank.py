@@ -16,16 +16,13 @@ gephiflag = False
 gephitype = "unified"
 wargameflag = False
 maximumrolls = 1
-industries = ".*"
-regions = ".*"
-platforms = ".*"
-gamephases = ["initial-access", "execution", "persistence", "privilege-escalation", "defence-evasion", "credential-access", "discovery", "command-and-control", "exfiltration", "impact"]
+industriespattern = ".*"
+regionspattern = ".*"
+platformspattern = ".*"
+gamephasenamelist = ["initial-access", "execution", "persistence", "privilege-escalation", "defence-evasion", "credential-access", "discovery", "command-and-control", "exfiltration", "impact"]
 
-print(os.path.basename(__file__) + " 0.1")
-try:
-    options, arguments = getopt.getopt(sys.argv[1:], "dva:G:W:i:r:p:", ["debug", "verbose", "attackurl=", "gephi=", "wargame=", "industry=", "region=", "platform="])
-except:
-    print("usage: " + os.path.basename(__file__) + " [-G <\"unified\" | \"discrete\"> | -W <maxiumumrolls>] -a <attackurl> [-d] [-v] [-i <industry>] [-r <region>] [-p <platform>]")
+def usage(commandname):
+    print("usage: " + os.path.basename(__file__) + " [-G <\"unified\" | \"discrete\"> | -W <maxiumumrolls>] -a <attackurl> [-d] [-v] [-i <industriespattern>] [-r <regionspattern>] [-p <platformspattern>]")
     print()
     print("	-d - debug mode, toggles additional output")
     print("	-v - verbose mode, toggles descriptions in non-gephi mode")
@@ -36,6 +33,251 @@ except:
     print("	-r - constrain ATT&CK kill chains to specific regions")
     print("	-p - constrain ATT&CK kill chains to specific platforms")
     sys.exit(1)
+
+def findActor(jsonobjects, debugflag, industriespattern, regionspattern):
+    newjsonobjects = []
+    for jsonobject in jsonobjects["objects"]:
+        if jsonobject["type"] == "intrusion-set":
+            if "description" in jsonobject.keys():
+                if re.match(industriespattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE) and re.match(regionspattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE):
+                    if debugflag == True:
+                        print("I: industry/region match " + jsonobject["description"])
+                    newjsonobjects.append(jsonobject)
+    return newjsonobjects
+
+def findAttackPlatform(jsonobjects, debugflag, targetreference, platformspattern):
+    return findPlatform(jsonobjects, debugflag, "attack-pattern", targetreference, platformspattern)
+
+def findMalwarePlatform(jsonobjects, debugflag, targetreference, platformspattern):
+    return findPlatform(jsonobjects, debugflag, "malware", targetreference, platformspattern)
+
+def findToolPlatform(jsonobjects, debugflag, targetreference, platformspattern):
+    return findPlatform(jsonobjects, debugflag, "tool", targetreference, platformspattern)
+
+def findPlatform(jsonobjects, debugflag, objecttype, targetreference, platformspattern):
+    newjsonobjects = []
+    for jsonobject in jsonobjects["objects"]:
+        if jsonobject["type"] == objecttype:
+            if targetreference == jsonobject["id"]:
+                if "x_mitre_platforms" in jsonobject.keys():
+                    for platform in jsonobject["x_mitre_platforms"]:
+                        if re.match(platformspattern, platform, re.IGNORECASE | re.MULTILINE):
+                            if debugflag == True:
+                                print("I: platform match " + platform)
+                            newjsonobjects.append(jsonobject)
+    return newjsonobjects
+
+
+def gephi(jsonobjects, debugflag, industriespattern, regionspattern, platformspattern, gephitype):
+    for jsonobject in findActor(jsonobjects, debugflag, regionspattern, platformspattern):
+         for jsonobject2 in jsonobjects["objects"]:
+             if jsonobject2["type"] == "relationship":
+                 if "source_ref" in jsonobject2.keys():
+                     if jsonobject2["source_ref"] == jsonobject["id"]:
+                         for jsonobject3 in findAttackPlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
+                              if "kill_chain_phases" in jsonobject3.keys():
+                                  for phase in jsonobject3["kill_chain_phases"]:
+                                      if "phase_name" in phase.keys():
+                                          if gephitype == "unified":
+                                              print(jsonobject["name"] + ";" + phase["phase_name"])
+                                          else:
+                                              print(jsonobject["name"] + ";" + jsonobject["name"] + "-" + phase["phase_name"])
+                                          if "external_references" in jsonobject3.keys():
+                                              for datasource in jsonobject3["external_references"]:
+                                                  if "source_name" in datasource.keys():
+                                                      if datasource["source_name"] == "mitre-attack" or datasource["source_name"] != "capec":
+                                                          if "external_id" in datasource.keys():
+                                                              if gephitype == "unified":
+                                                                  print(phase["phase_name"] + ";" + datasource["external_id"])
+                                                              else:
+                                                                  print(jsonobject["name"] + "-" + phase["phase_name"] + ";" + datasource["external_id"])
+
+def wargame(gamephasenamelist, jsonobjects, debugflag, verboseflag, industriespattern, regionspattern, platformspattern, maximumrolls):
+    print("# Shall we play a game?\n")
+    for rollcounter in range(0, maximumrolls):
+        print("## Roll #" + str(rollcounter + 1) + "\n")
+        (gameidlist, gamenamelist, gamedescriptionlist) = roll(gamephasenamelist, jsonobjects, debugflag, verboseflag, industriespattern, regionspattern, platformspattern)
+        for gamephasename in gamephasenamelist:
+            print("### " + gamephasename + "\n")
+            if gamephasename in gameidlist.keys() and gamephasename in gamenamelist.keys() and gamephasename in gamedescriptionlist.keys():
+                print("* " + gameidlist[gamephasename] + ": " + gamenamelist[gamephasename] + "\n")
+                if verboseflag == True:
+                    print(gamedescriptionlist[gamephasename] + "\n")
+            else:
+                print(gamenamelist[gamephasename] + "\n")
+
+def roll(gamephasenamelist, jsonobjects, debugflag, verboseflag, industriespattern, regionspattern, platformspattern):
+    gamephaseattackidlist = {}
+    gamephaseattacknamelist = {}
+    gamephaseattackdescriptionlist = {}
+    for gamephasename in gamephasenamelist:
+        attacknamelist = {}
+        attackdescriptionlist = {}
+        for jsonobject in findActor(jsonobjects, debugflag, regionspattern, platformspattern):
+             for jsonobject2 in jsonobjects["objects"]:
+                 if jsonobject2["type"] == "relationship":
+                     if "source_ref" in jsonobject2.keys():
+                         if jsonobject2["source_ref"] == jsonobject["id"]:
+                             for jsonobject3 in findAttackPlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
+                                  if "kill_chain_phases" in jsonobject3.keys():
+                                      for phase in jsonobject3["kill_chain_phases"]:
+                                          if "phase_name" in phase.keys():
+                                              if phase["phase_name"] == gamephasename:
+                                                  if "external_references" in jsonobject3.keys():
+                                                      for datasource in jsonobject3["external_references"]:
+                                                          if "source_name" in datasource.keys():
+                                                              if datasource["source_name"] == "mitre-attack" or datasource["source_name"] != "capec":
+                                                                  if "external_id" in datasource.keys():
+                                                                      attacknamelist[datasource["external_id"]] = jsonobject3["name"]
+                                                                      attackdescriptionlist[datasource["external_id"]] = jsonobject3["description"].replace("###", "####")
+        if attacknamelist and attackdescriptionlist:
+            gamephaseattackidlist[gamephasename] = random.choice(list(attacknamelist.keys()))
+            gamephaseattacknamelist[gamephasename] = attacknamelist[gamephaseattackidlist[gamephasename]]
+            gamephaseattackdescriptionlist[gamephasename] = attackdescriptionlist[gamephaseattackidlist[gamephasename]]
+        else:
+            gamephaseattacknamelist[gamephasename] = "E: You have been eaten by a grue!"
+    return (gamephaseattackidlist, gamephaseattacknamelist, gamephaseattackdescriptionlist)
+
+def report(jsonobjects, debugflag, verboseflag, industriespattern, regionspattern, platformspattern):
+    (reportdescriptionlist, reportreferencelist) = findReportReferences(jsonobjects, debugflag, verboseflag, industriespattern, regionspattern, platformspattern)
+    (attacklist, phaselist, platformlist, defencelist, telemetrylist, enrichmentreferencelist, toollist, toolreferencelist) = buildReport(jsonobjects, debugflag, verboseflag, reportreferencelist)
+    print("# Threat groups\n")
+    for reportreferencename in reportdescriptionlist.keys():
+        print("* " + reportreferencename)
+        if verboseflag:
+            print(reportdescriptionlist[reportreferencename])
+    print()
+    print("# Validate the following attacks\n")
+    for attackname in attacklist.keys():
+       print("* " + attackname + " - " + str(attacklist[attackname]))
+    print()
+    print("# Validate the following phases\n")
+    for phasename in phaselist.keys():
+       print("* " + phasename + " - " + str(phaselist[phasename]))
+    print()
+    print("# Validate the following platforms\n")
+    for platformname in platformlist.keys():
+       print("* " + platformname + " - " + str(platformlist[platformname]))
+    print()
+    print("# Validate the following defences\n")
+    for defencename in defencelist.keys():
+       print("* " + defencename + " - " + str(defencelist[defencename]))
+    print()
+    print("# Validate the following data sources\n")
+    for telemetryname in telemetrylist.keys():
+       print("* " + telemetryname + " - " + str(telemetrylist[telemetryname]))
+    print()
+    print("# Review the following attack references\n")
+    for enrichmentreferenceurl in enrichmentreferencelist.keys():
+       print("* " + enrichmentreferenceurl + " - " + str(enrichmentreferencelist[enrichmentreferenceurl]))
+    print()
+    print("# Validate the following tools and malware\n")
+    for toolname in toollist.keys():
+       print("* " + toolname + " - " + str(toollist[toolname]))
+    print()
+    print("# Review the following tool and malware references\n")
+    for toolreferenceurl in toolreferencelist.keys():
+       print("* " + toolreferenceurl + " - " + str(toolreferencelist[toolreferenceurl]))
+    print()
+
+def findReportReferences(jsonobjects, debugflag, verboseflag, industriespattern, regionspattern, platformspattern):
+    reportdescriptionlist = {}
+    reportreferencelist = {}
+    for jsonobject in findActor(jsonobjects, debugflag, regionspattern, platformspattern):
+         for jsonobject2 in jsonobjects["objects"]:
+             if jsonobject2["type"] == "relationship":
+                 if "source_ref" in jsonobject2.keys():
+                     if jsonobject2["source_ref"] == jsonobject["id"]:
+                         for jsonobject3 in findAttackPlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
+                             reportdescriptionlist[jsonobject["name"]] = jsonobject["description"].replace("###", "####")
+                             if jsonobject["name"] not in reportreferencelist.keys():
+                                 reportreferencelist[jsonobject["name"]] = []
+                             reportreferencelist[jsonobject["name"]].append(jsonobject3["id"])
+                         for jsonobject3 in findMalwarePlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
+                              reportdescriptionlist[jsonobject["name"]] = jsonobject["description"].replace("###", "####")
+                              if jsonobject["name"] not in reportreferencelist.keys():
+                                  reportreferencelist[jsonobject["name"]] = []
+                              reportreferencelist[jsonobject["name"]].append(jsonobject3["id"])
+                         for jsonobject3 in findToolPlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
+                              reportdescriptionlist[jsonobject["name"]] = jsonobject["description"].replace("###", "####")
+                              if jsonobject["name"] not in reportreferencelist.keys():
+                                  reportreferencelist[jsonobject["name"]] = []
+                              reportreferencelist[jsonobject["name"]].append(jsonobject3["id"])
+    return (reportdescriptionlist, reportreferencelist)
+
+def buildReport(jsonobjects, debugflag, verboseflag, reportreferencelist):
+    attacklist = {}
+    phaselist = {}
+    platformlist = {}
+    defencelist = {}
+    telemetrylist = {}
+    enrichmentreferencelist = {}
+    toollist = {}
+    toolreferencelist = {}
+    for reportreferencename in reportreferencelist.keys():
+        for jsonobject in jsonobjects["objects"]:
+            if jsonobject["type"] == "attack-pattern":
+                for reportreferenceid in reportreferencelist[reportreferencename]:
+                    if jsonobject["id"] == reportreferenceid:
+                        if debugflag == True:
+                            pprint(jsonobject)
+                        if jsonobject["name"] not in attacklist.keys():
+                            attacklist[jsonobject["name"]] = 0
+                        attacklist[jsonobject["name"]] += 1
+                        if "kill_chain_phases" in jsonobject.keys():
+                            for phase in jsonobject["kill_chain_phases"]:
+                                if phase["phase_name"] not in phaselist.keys():
+                                    phaselist[phase["phase_name"]] = 0
+                                phaselist[phase["phase_name"]] += 1
+                        if "x_mitre_platforms" in jsonobject.keys():
+                            for platform in jsonobject["x_mitre_platforms"]:
+                                if platform not in platformlist.keys():
+                                    platformlist[platform] = 0
+                                platformlist[platform] += 1
+                        if "x_mitre_defense_bypassed" in jsonobject.keys():
+                            for defence in jsonobject["x_mitre_defense_bypassed"]:
+                                if defence not in defencelist.keys():
+                                    defencelist[defence] = 0
+                                defencelist[defence] += 1
+                        if "x_mitre_data_sources" in jsonobject.keys():
+                            for telemetry in jsonobject["x_mitre_data_sources"]:
+                                if telemetry not in telemetrylist.keys():
+                                    telemetrylist[telemetry] = 0
+                                telemetrylist[telemetry] += 1
+                        if "external_references" in jsonobject.keys():
+                            for datasource in jsonobject["external_references"]:
+                                if "source_name" in datasource.keys():
+                                    if datasource["source_name"] != "mitre-attack" and datasource["source_name"] != "capec":
+                                        if "url" in datasource.keys():
+                                            if "description" in datasource.keys():
+                                                enrichmentreferencelist[datasource["url"]] = datasource["description"]
+            if jsonobject["type"] == "malware" or jsonobject["type"] == "tool":
+                for reportreferenceid in reportreferencelist[reportreferencename]:
+                    if jsonobject["id"] == reportreferenceid:
+                        if debugflag == True:
+                            pprint(jsonobject)
+                        if jsonobject["name"] not in toollist.keys():
+                            toollist[jsonobject["name"]] = 0
+                        toollist[jsonobject["name"]] += 1
+                        if "x_mitre_platforms" in jsonobject.keys():
+                            for platform in jsonobject["x_mitre_platforms"]:
+                                if platform not in platformlist.keys():
+                                    platformlist[platform] = 0
+                                platformlist[platform] += 1
+                        if "external_references" in jsonobject.keys():
+                            for datasource in jsonobject["external_references"]:
+                                if "source_name" in datasource.keys():
+                                    if datasource["source_name"] != "mitre-attack" and datasource["source_name"] != "capec":
+                                        if "url" in datasource.keys():
+                                            if "description" in datasource.keys():
+                                                toolreferencelist[datasource["url"]] = datasource["description"]
+    return (attacklist, phaselist, platformlist, defencelist, telemetrylist, enrichmentreferencelist, toollist, toolreferencelist)
+    
+print(os.path.basename(__file__) + " 0.2")
+try:
+    options, arguments = getopt.getopt(sys.argv[1:], "dva:G:W:i:r:p:", ["debug", "verbose", "attackurl=", "gephi=", "wargame=", "industry=", "region=", "platform="])
+except:
+    usage(os.path.basename(__file__))
 for option, value in options:
     if option == "-d" or option == "--debug":
         debugflag = True
@@ -52,233 +294,21 @@ for option, value in options:
         if value:
             maximumrolls = int(value)
     if option == "-i" or option == "--industry":
-        industries = value
-        print("I: searching for industries that match " + industries)
+        industriespattern = value
+        print("I: searching for industries that match " + industriespattern)
     if option == "-r" or option == "--region":
-        regions = value
-        print("I: searching for regions that match " + regions)
+        regionspattern = value
+        print("I: searching for regions that match " + regionspattern)
     if option == "-p" or option == "--platform":
-        platforms = value
-        print("I: searching for platforms that match " + platforms)
+        platformspattern = value
+        print("I: searching for platforms that match " + platformspattern)
 print("I: using " + attackurl)
 with urllib.request.urlopen(attackurl) as url:
-    data = json.loads(url.read().decode())
+    jsonobjects = json.loads(url.read().decode())
     if gephiflag == True:
-        for item in data["objects"]:
-            if item["type"] == "intrusion-set":
-                if "description" in item.keys():
-                    if re.match(industries, item["description"], re.IGNORECASE | re.MULTILINE) and re.match(regions, item["description"], re.IGNORECASE | re.MULTILINE):
-                        if debugflag == True:
-                            print("I: industry/region match " + item["description"])
-                        for item2 in data["objects"]:
-                            if item2["type"] == "relationship":
-                                if "source_ref" in item2.keys():
-                                    if item2["source_ref"] == item["id"]:
-                                        for item3 in data["objects"]:
-                                            if item3["type"] == "attack-pattern":
-                                                if item2["target_ref"] == item3["id"]:
-                                                    if "x_mitre_platforms" in item3.keys():
-                                                        for platform in item3["x_mitre_platforms"]:
-                                                            if re.match(platforms, platform, re.IGNORECASE | re.MULTILINE):
-                                                                if debugflag == True:
-                                                                    print("I: platform match " + platform)
-                                                                if "kill_chain_phases" in item3.keys():
-                                                                    for phase in item3["kill_chain_phases"]:
-                                                                        if "phase_name" in phase.keys():
-                                                                            if gephitype == "unified":
-                                                                                print(item["name"] + ";" + phase["phase_name"])
-                                                                            else:
-                                                                                print(item["name"] + ";" + item["name"] + "-" + phase["phase_name"])
-                                                                            if "external_references" in item3.keys():
-                                                                                for datasource in item3["external_references"]:
-                                                                                    if "source_name" in datasource.keys():
-                                                                                        if datasource["source_name"] == "mitre-attack" or datasource["source_name"] != "capec":
-                                                                                            if "external_id" in datasource.keys():
-                                                                                                if gephitype == "unified":
-                                                                                                    print(phase["phase_name"] + ";" + datasource["external_id"])
-                                                                                                else:
-                                                                                                    print(item["name"] + "-" + phase["phase_name"] + ";" + datasource["external_id"])
+        gephi(jsonobjects, debugflag, industriespattern, regionspattern, platformspattern, gephitype)
     else:
         if wargameflag == True:
-            print("# Shall we play a game?\n")
-            for rollcounter in range(0, maximumrolls):
-                print("## Roll #" + str(rollcounter + 1) + "\n")
-                for gamephase in gamephases:
-                    print("### Phase: " + gamephase + "\n")
-                    names = {}
-                    descriptions = {}
-                    for item in data["objects"]:
-                        if item["type"] == "intrusion-set":
-                            if "description" in item.keys():
-                                if re.match(industries, item["description"], re.IGNORECASE | re.MULTILINE) and re.match(regions, item["description"], re.IGNORECASE | re.MULTILINE):
-                                    if debugflag == True:
-                                        print("I: industry/region match " + item["description"])
-                                    for item2 in data["objects"]:
-                                        if item2["type"] == "relationship":
-                                            if "source_ref" in item2.keys():
-                                                if item2["source_ref"] == item["id"]:
-                                                    for item3 in data["objects"]:
-                                                        if item3["type"] == "attack-pattern":
-                                                            if item2["target_ref"] == item3["id"]:
-                                                                if "x_mitre_platforms" in item3.keys():
-                                                                    for platform in item3["x_mitre_platforms"]:
-                                                                        if re.match(platforms, platform, re.IGNORECASE | re.MULTILINE):
-                                                                            if debugflag == True:
-                                                                                print("I: platform match " + platform)
-                                                                            if "kill_chain_phases" in item3.keys():
-                                                                                for phase in item3["kill_chain_phases"]:
-                                                                                    if "phase_name" in phase.keys():
-                                                                                        if phase["phase_name"] == gamephase:
-                                                                                            if "external_references" in item3.keys():
-                                                                                                for datasource in item3["external_references"]:
-                                                                                                    if "source_name" in datasource.keys():
-                                                                                                        if datasource["source_name"] == "mitre-attack" or datasource["source_name"] != "capec":
-                                                                                                            if "external_id" in datasource.keys():
-                                                                                                                names[datasource["external_id"]] = item3["name"]
-                                                                                                                descriptions[datasource["external_id"]] = item3["description"].replace("###", "####")
-                    if names and descriptions:
-                        id = random.choice(list(names.keys()))
-                        print("* " + id + ": " + names[id] + "\n")
-                        if verboseflag:
-                            print(descriptions[id] + "\n")
-                    else:
-                        print("E: You have been eaten by a grue!\n")
+            wargame(gamephasenamelist, jsonobjects, debugflag, verboseflag, industriespattern, regionspattern, platformspattern, maximumrolls)
         else:
-            descriptions = {}
-            references = {}
-            for item in data["objects"]:
-                if item["type"] == "intrusion-set":
-                    if "description" in item.keys():
-                        if re.match(industries, item["description"], re.IGNORECASE | re.MULTILINE) and re.match(regions, item["description"], re.IGNORECASE | re.MULTILINE):
-                            if debugflag == True:
-                                print("I: industry/region match " + item["description"])
-                            for item2 in data["objects"]:
-                                if item2["type"] == "relationship":
-                                    if "source_ref" in item2.keys():
-                                        if item2["source_ref"] == item["id"]:
-                                            for item3 in data["objects"]:
-                                                if item3["type"] == "attack-pattern":
-                                                    if item2["target_ref"] == item3["id"]:
-                                                        if "x_mitre_platforms" in item3.keys():
-                                                            for platform in item3["x_mitre_platforms"]:
-                                                                if re.match(platforms, platform, re.IGNORECASE | re.MULTILINE):
-                                                                    if debugflag == True:
-                                                                        print("I: platform match " + platform)
-                                                                    descriptions[item["name"]] = item["description"].replace("###", "####")
-                                                                    if item["name"] not in references.keys():
-                                                                        references[item["name"]] = []
-                                                                    references[item["name"]].append(item3["id"])
-                                                if item3["type"] == "malware" or item3["type"] == "tool":
-                                                    if item2["target_ref"] == item3["id"]:
-                                                        if "x_mitre_platforms" in item3.keys():
-                                                            for platform in item3["x_mitre_platforms"]:
-                                                                if re.match(platforms, platform, re.IGNORECASE | re.MULTILINE):
-                                                                    if debugflag == True:
-                                                                        print("I: platform match " + platform)
-                                                                    descriptions[item["name"]] = item["description"].replace("###", "####")
-                                                                    if item["name"] not in references.keys():
-                                                                        references[item["name"]] = []
-                                                                    references[item["name"]].append(item3["id"])
-            phases = {}
-            attacks = {}
-            platforms = {}
-            defences = {}
-            datasources = {}
-            attackreferences = {}
-            tools = {}
-            toolreferences = {}
-            for name in references.keys():
-                for item in data["objects"]:
-                    if item["type"] == "attack-pattern":
-                        for reference in references[name]:
-                            if item["id"] == reference:
-                                if debugflag == True:
-                                    pprint(item)
-                                if item["name"] not in attacks.keys():
-                                    attacks[item["name"]] = 0
-                                attacks[item["name"]] += 1
-                                if "kill_chain_phases" in item.keys():
-                                    for phase in item["kill_chain_phases"]:
-                                        if phase["phase_name"] not in phases.keys():
-                                            phases[phase["phase_name"]] = 0
-                                        phases[phase["phase_name"]] += 1
-                                if "x_mitre_platforms" in item.keys():
-                                    for platform in item["x_mitre_platforms"]:
-                                        if platform not in platforms.keys():
-                                            platforms[platform] = 0
-                                        platforms[platform] += 1
-                                if "x_mitre_defense_bypassed" in item.keys():
-                                    for defence in item["x_mitre_defense_bypassed"]:
-                                        if defence not in defences.keys():
-                                            defences[defence] = 0
-                                        defences[defence] += 1
-                                if "x_mitre_data_sources" in item.keys():
-                                    for datasource in item["x_mitre_data_sources"]:
-                                        if datasource not in datasources.keys():
-                                            datasources[datasource] = 0
-                                        datasources[datasource] += 1
-                                if "external_references" in item.keys():
-                                    for datasource in item["external_references"]:
-                                        if "source_name" in datasource.keys():
-                                            if datasource["source_name"] != "mitre-attack" and datasource["source_name"] != "capec":
-                                                if "url" in datasource.keys():
-                                                    if "description" in datasource.keys():
-                                                        attackreferences[datasource["url"]] = datasource["description"]
-                    if item["type"] == "malware" or item["type"] == "tool":
-                        for reference in references[name]:
-                            if item["id"] == reference:
-                                if debugflag == True:
-                                    pprint(item)
-                                if item["name"] not in tools.keys():
-                                    tools[item["name"]] = 0
-                                tools[item["name"]] += 1
-                                if "x_mitre_platforms" in item.keys():
-                                    for platform in item["x_mitre_platforms"]:
-                                        if platform not in platforms.keys():
-                                            platforms[platform] = 0
-                                        platforms[platform] += 1
-                                if "external_references" in item.keys():
-                                    for datasource in item["external_references"]:
-                                        if "source_name" in datasource.keys():
-                                            if datasource["source_name"] != "mitre-attack" and datasource["source_name"] != "capec":
-                                                if "url" in datasource.keys():
-                                                    if "description" in datasource.keys():
-                                                        toolreferences[datasource["url"]] = datasource["description"]
-            print("# Threat groups\n")
-            for name in descriptions.keys():
-                print("* " + name)
-                if verboseflag:
-                    print(descriptions[name])
-            print()
-            print("# Validate the following attacks\n")
-            for attack in attacks.keys():
-               print("* " + attack + " - " + str(attacks[attack]))
-            print()
-            print("# Validate the following phases\n")
-            for phase in phases.keys():
-               print("* " + phase + " - " + str(phases[phase]))
-            print()
-            print("# Validate the following platforms\n")
-            for platform in platforms.keys():
-               print("* " + platform + " - " + str(platforms[platform]))
-            print()
-            print("# Validate the following defences\n")
-            for defence in defences.keys():
-               print("* " + defence + " - " + str(defences[defence]))
-            print()
-            print("# Validate the following data sources\n")
-            for datasource in datasources.keys():
-               print("* " + datasource + " - " + str(datasources[datasource]))
-            print()
-            print("# Review the following attack references\n")
-            for externalreference in attackreferences.keys():
-               print("* " + externalreference + " - " + str(attackreferences[externalreference]))
-            print()
-            print("# Validate the following tools and malware\n")
-            for attack in tools.keys():
-               print("* " + attack + " - " + str(tools[attack]))
-            print()
-            print("# Review the following tool and malware references\n")
-            for toolreference in toolreferences.keys():
-               print("* " + toolreference + " - " + str(toolreferences[toolreference]))
-            print()
+            report(jsonobjects, debugflag, verboseflag, industriespattern, regionspattern, platformspattern)
