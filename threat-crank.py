@@ -51,11 +51,15 @@ def filterActor(jsonobjects, debugflag, actorspattern, industriespattern, region
                         if debugflag == True:
                             print("I: actor match " + actoralias)
                         matchflag = matchflag or True
+                    else:
+                        matchflag = false
             if "description" in jsonobject.keys():
                 if re.match(industriespattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE) and re.match(regionspattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE):
                     if debugflag == True:
                         print("I: industry/region match " + jsonobject["description"])
                     matchflag = matchflag and True
+                else:
+                    matchflag = False
             if matchflag == True:
                 newjsonobjects.append(jsonobject)
     return newjsonobjects
@@ -82,6 +86,8 @@ def filterPlatform(jsonobjects, debugflag, objecttype, targetreference, platform
                                 if debugflag == True:
                                     print("I: platform match " + platformname)
                                 matchflag = matchflag or True
+                            else:
+                                matchflag = False
                     if matchflag == True:
                         newjsonobjects.append(jsonobject)
     return newjsonobjects
@@ -292,7 +298,7 @@ def buildReport(jsonobjects, debugflag, verboseflag, reportreferencelist):
                                                 toolreferencelist[referenceobject["url"]] = referenceobject["description"]
     return (attacklist, phaselist, platformlist, defencelist, telemetrylist, referencelist, toollist, toolreferencelist)
     
-print(os.path.basename(__file__) + " 0.2")
+print(os.path.basename(__file__) + " 0.2.1")
 try:
     options, arguments = getopt.getopt(sys.argv[1:], "dvA:G:W:a:i:r:p:", ["debug", "verbose", "attackurl=", "gephi=", "wargame=", "actor=", "industry=", "region=", "platform="])
 except:
