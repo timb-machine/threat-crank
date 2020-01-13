@@ -52,7 +52,7 @@ def filterActor(jsonobjects, debugflag, actorspattern, industriespattern, region
                             print("I: actor match " + actoralias)
                         matchflag = matchflag or True
                     else:
-                        matchflag = false
+                        matchflag = False
             if "description" in jsonobject.keys():
                 if re.match(industriespattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE) and re.match(regionspattern, jsonobject["description"], re.IGNORECASE | re.MULTILINE):
                     if debugflag == True:
