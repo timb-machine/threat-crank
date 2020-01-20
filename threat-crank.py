@@ -94,7 +94,7 @@ def filterPlatform(jsonobjects, debugflag, objecttype, targetreference, platform
 
 
 def gephi(jsonobjects, debugflag, actorspattern, industriespattern, regionspattern, platformspattern, gephitype):
-    for jsonobject in filterActor(jsonobjects, debugflag, actorspattern, regionspattern, platformspattern):
+    for jsonobject in filterActor(jsonobjects, debugflag, actorspattern, industriespattern, regionspattern):
          for jsonobject2 in jsonobjects["objects"]:
              if jsonobject2["type"] == "relationship":
                  if "source_ref" in jsonobject2.keys():
