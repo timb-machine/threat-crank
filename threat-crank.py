@@ -174,49 +174,49 @@ def report(jsonobjects, debugflag, verboseflag, actorspattern, industriespattern
     (reportdescriptionlist, reportreferencelist) = filterReportReferences(jsonobjects, debugflag, verboseflag, actorspattern, industriespattern, regionspattern, platformspattern)
     (attacklist, phaselist, platformlist, defencelist, telemetrylist, referencelist, toollist, toolreferencelist, malwarelist, malwarereferencelist) = buildReport(jsonobjects, debugflag, verboseflag, reportreferencelist)
     print("# Threat groups\n")
-    for reportreferencename in reportdescriptionlist.keys():
+    for reportreferencename in sorted(reportdescriptionlist.keys()):
         print("* " + reportreferencename)
         if verboseflag:
             print(reportdescriptionlist[reportreferencename])
     print()
     print("# Validate the following attacks\n")
-    for attackname in attacklist.keys():
+    for attackname in sorted(attacklist.keys()):
         print("* " + attackname + " - " + str(attacklist[attackname]))
     print()
     print("# Validate the following phases\n")
-    for phasename in phaselist.keys():
+    for phasename in sorted(phaselist.keys()):
         print("* " + phasename + " - " + str(phaselist[phasename]))
     print()
     print("# Validate the following platforms\n")
-    for platformname in platformlist.keys():
+    for platformname in sorted(platformlist.keys()):
         print("* " + platformname + " - " + str(platformlist[platformname]))
     print()
     print("# Validate the following defences\n")
-    for defencename in defencelist.keys():
+    for defencename in sorted(defencelist.keys()):
         print("* " + defencename + " - " + str(defencelist[defencename]))
     print()
     print("# Validate the following data sources\n")
-    for telemetryname in telemetrylist.keys():
+    for telemetryname in sorted(telemetrylist.keys()):
         print("* " + telemetryname + " - " + str(telemetrylist[telemetryname]))
     print()
     print("# Review the following attack references\n")
-    for referenceurl in referencelist.keys():
+    for referenceurl in sorted(referencelist.keys()):
         print("* " + referenceurl + " - " + referencelist[referenceurl])
     print()
     print("# Validate the following tools\n")
-    for toolname in toollist.keys():
+    for toolname in sorted(toollist.keys()):
         print("* " + toolname + " - " + str(toollist[toolname]))
     print()
     print("# Review the following tool references\n")
-    for toolreferenceurl in toolreferencelist.keys():
+    for toolreferenceurl in sorted(toolreferencelist.keys()):
         print("* " + toolreferenceurl + " - " + toolreferencelist[toolreferenceurl])
     print()
     print("# Validate the following malware\n")
-    for malwarename in malwarelist.keys():
+    for malwarename in sorted(malwarelist.keys()):
         print("* " + malwarename + " - " + str(malwarelist[malwarename]))
     print()
     print("# Review the following malware references\n")
-    for malwarereferenceurl in malwarereferencelist.keys():
+    for malwarereferenceurl in sorted(malwarereferencelist.keys()):
         print("* " + malwarereferenceurl + " - " + malwarereferencelist[malwarereferenceurl])
     print()
 
