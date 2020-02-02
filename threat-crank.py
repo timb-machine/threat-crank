@@ -25,15 +25,15 @@ gamephasenamelist = ["initial-access", "execution", "persistence", "privilege-es
 def usage(commandname):
     print("usage: " + os.path.basename(__file__) + " [-G <\"unified\" | \"discrete\"> | -W <maxiumumrolls>] -A <attackurl> [-d] [-v] [-a <actorspattern> -i <industriespattern>] [-r <regionspattern>] [-p <platformspattern>]")
     print()
-    print("	-d - debug mode, toggles additional output")
-    print("	-v - verbose mode, toggles descriptions in non-gephi mode")
-    print("	-A - use a different ATT&CK source")
-    print("	-G - gephi mode, dump node pairs for directed graph of matching ATT&CK kill chains for consumption by Gephi")
-    print("	-W - wargame mode, construct a number of randomised attack trees")
-    print("	-a - constrain ATT&CK kill chains to specific actors")
-    print("	-i - constrain ATT&CK kill chains to specific industries")
-    print("	-r - constrain ATT&CK kill chains to specific regions")
-    print("	-p - constrain ATT&CK kill chains to specific platforms")
+    print("\t-d - debug mode, toggles additional output")
+    print("\t-v - verbose mode, toggles descriptions in non-gephi mode")
+    print("\t-A - use a different ATT&CK source")
+    print("\t-G - gephi mode, dump node pairs for directed graph of matching ATT&CK kill chains for consumption by Gephi")
+    print("\t-W - wargame mode, construct a number of randomised attack trees")
+    print("\t-a - constrain ATT&CK kill chains to specific actors")
+    print("\t-i - constrain ATT&CK kill chains to specific industries")
+    print("\t-r - constrain ATT&CK kill chains to specific regions")
+    print("\t-p - constrain ATT&CK kill chains to specific platforms")
     sys.exit(1)
 
 def filterActor(jsonobjects, debugflag, actorspattern, industriespattern, regionspattern):
@@ -95,27 +95,27 @@ def filterPlatform(jsonobjects, debugflag, objecttype, targetreference, platform
 
 def gephi(jsonobjects, debugflag, actorspattern, industriespattern, regionspattern, platformspattern, gephitype):
     for jsonobject in filterActor(jsonobjects, debugflag, actorspattern, industriespattern, regionspattern):
-         for jsonobject2 in jsonobjects["objects"]:
-             if jsonobject2["type"] == "relationship":
-                 if "source_ref" in jsonobject2.keys():
-                     if jsonobject2["source_ref"] == jsonobject["id"]:
-                         for jsonobject3 in filterAttackPlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
-                              if "kill_chain_phases" in jsonobject3.keys():
-                                  for phase in jsonobject3["kill_chain_phases"]:
-                                      if "phase_name" in phase.keys():
-                                          if gephitype == "unified":
-                                              print(jsonobject["name"] + ";" + phase["phase_name"])
-                                          else:
-                                              print(jsonobject["name"] + ";" + jsonobject["name"] + "-" + phase["phase_name"])
-                                          if "external_references" in jsonobject3.keys():
-                                              for referenceobject in jsonobject3["external_references"]:
-                                                  if "source_name" in referenceobject.keys():
-                                                      if referenceobject["source_name"] == "mitre-attack" or referenceobject["source_name"] != "capec":
-                                                          if "external_id" in referenceobject.keys():
-                                                              if gephitype == "unified":
-                                                                  print(phase["phase_name"] + ";" + referenceobject["external_id"])
-                                                              else:
-                                                                  print(jsonobject["name"] + "-" + phase["phase_name"] + ";" + referenceobject["external_id"])
+        for jsonobject2 in jsonobjects["objects"]:
+            if jsonobject2["type"] == "relationship":
+                if "source_ref" in jsonobject2.keys():
+                    if jsonobject2["source_ref"] == jsonobject["id"]:
+                        for jsonobject3 in filterAttackPlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
+                            if "kill_chain_phases" in jsonobject3.keys():
+                                for phase in jsonobject3["kill_chain_phases"]:
+                                    if "phase_name" in phase.keys():
+                                        if gephitype == "unified":
+                                            print(jsonobject["name"] + ";" + phase["phase_name"])
+                                        else:
+                                            print(jsonobject["name"] + ";" + jsonobject["name"] + "-" + phase["phase_name"])
+                                        if "external_references" in jsonobject3.keys():
+                                            for referenceobject in jsonobject3["external_references"]:
+                                                if "source_name" in referenceobject.keys():
+                                                    if referenceobject["source_name"] == "mitre-attack" or referenceobject["source_name"] != "capec":
+                                                        if "external_id" in referenceobject.keys():
+                                                            if gephitype == "unified":
+                                                                print(phase["phase_name"] + ";" + referenceobject["external_id"])
+                                                            else:
+                                                                print(jsonobject["name"] + "-" + phase["phase_name"] + ";" + referenceobject["external_id"])
 
 def wargame(gamephasenamelist, jsonobjects, debugflag, verboseflag, actorspattern, industriespattern, regionspattern, platformspattern, maximumrolls):
     print("# Shall we play a game?\n")
@@ -139,22 +139,22 @@ def roll(gamephasenamelist, jsonobjects, debugflag, verboseflag, actorspattern, 
         attacknamelist = {}
         attackdescriptionlist = {}
         for jsonobject in filterActor(jsonobjects, debugflag, actorspattern, industriespattern, regionspattern):
-             for jsonobject2 in jsonobjects["objects"]:
-                 if jsonobject2["type"] == "relationship":
-                     if "source_ref" in jsonobject2.keys():
-                         if jsonobject2["source_ref"] == jsonobject["id"]:
-                             for jsonobject3 in filterAttackPlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
-                                  if "kill_chain_phases" in jsonobject3.keys():
-                                      for phase in jsonobject3["kill_chain_phases"]:
-                                          if "phase_name" in phase.keys():
-                                              if phase["phase_name"] == gamephasename:
-                                                  if "external_references" in jsonobject3.keys():
-                                                      for referenceobject in jsonobject3["external_references"]:
-                                                          if "source_name" in referenceobject.keys():
-                                                              if referenceobject["source_name"] == "mitre-attack" or referenceobject["source_name"] != "capec":
-                                                                  if "external_id" in referenceobject.keys():
-                                                                      attacknamelist[referenceobject["external_id"]] = jsonobject3["name"]
-                                                                      attackdescriptionlist[referenceobject["external_id"]] = jsonobject3["description"].replace("###", "####")
+            for jsonobject2 in jsonobjects["objects"]:
+                if jsonobject2["type"] == "relationship":
+                    if "source_ref" in jsonobject2.keys():
+                        if jsonobject2["source_ref"] == jsonobject["id"]:
+                            for jsonobject3 in filterAttackPlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
+                                if "kill_chain_phases" in jsonobject3.keys():
+                                    for phase in jsonobject3["kill_chain_phases"]:
+                                        if "phase_name" in phase.keys():
+                                            if phase["phase_name"] == gamephasename:
+                                                if "external_references" in jsonobject3.keys():
+                                                    for referenceobject in jsonobject3["external_references"]:
+                                                        if "source_name" in referenceobject.keys():
+                                                            if referenceobject["source_name"] == "mitre-attack" or referenceobject["source_name"] != "capec":
+                                                                if "external_id" in referenceobject.keys():
+                                                                    attacknamelist[referenceobject["external_id"]] = jsonobject3["name"]
+                                                                    attackdescriptionlist[referenceobject["external_id"]] = jsonobject3["description"].replace("###", "####")
         if attacknamelist and attackdescriptionlist:
             gamephaseattackidlist[gamephasename] = random.choice(list(attacknamelist.keys()))
             gamephaseattacknamelist[gamephasename] = attacknamelist[gamephaseattackidlist[gamephasename]]
@@ -174,60 +174,60 @@ def report(jsonobjects, debugflag, verboseflag, actorspattern, industriespattern
     print()
     print("# Validate the following attacks\n")
     for attackname in attacklist.keys():
-       print("* " + attackname + " - " + str(attacklist[attackname]))
+        print("* " + attackname + " - " + str(attacklist[attackname]))
     print()
     print("# Validate the following phases\n")
     for phasename in phaselist.keys():
-       print("* " + phasename + " - " + str(phaselist[phasename]))
+        print("* " + phasename + " - " + str(phaselist[phasename]))
     print()
     print("# Validate the following platforms\n")
     for platformname in platformlist.keys():
-       print("* " + platformname + " - " + str(platformlist[platformname]))
+        print("* " + platformname + " - " + str(platformlist[platformname]))
     print()
     print("# Validate the following defences\n")
     for defencename in defencelist.keys():
-       print("* " + defencename + " - " + str(defencelist[defencename]))
+        print("* " + defencename + " - " + str(defencelist[defencename]))
     print()
     print("# Validate the following data sources\n")
     for telemetryname in telemetrylist.keys():
-       print("* " + telemetryname + " - " + str(telemetrylist[telemetryname]))
+        print("* " + telemetryname + " - " + str(telemetrylist[telemetryname]))
     print()
     print("# Review the following attack references\n")
     for referenceurl in referencelist.keys():
-       print("* " + referenceurl + " - " + referencelist[referenceurl])
+        print("* " + referenceurl + " - " + referencelist[referenceurl])
     print()
     print("# Validate the following tools and malware\n")
     for toolname in toollist.keys():
-       print("* " + toolname + " - " + str(toollist[toolname]))
+        print("* " + toolname + " - " + str(toollist[toolname]))
     print()
     print("# Review the following tool and malware references\n")
     for toolreferenceurl in toolreferencelist.keys():
-       print("* " + toolreferenceurl + " - " + toolreferencelist[toolreferenceurl])
+        print("* " + toolreferenceurl + " - " + toolreferencelist[toolreferenceurl])
     print()
 
 def filterReportReferences(jsonobjects, debugflag, verboseflag, actorspattern, industriespattern, regionspattern, platformspattern):
     reportdescriptionlist = {}
     reportreferencelist = {}
     for jsonobject in filterActor(jsonobjects, debugflag, actorspattern, industriespattern, regionspattern):
-         for jsonobject2 in jsonobjects["objects"]:
-             if jsonobject2["type"] == "relationship":
-                 if "source_ref" in jsonobject2.keys():
-                     if jsonobject2["source_ref"] == jsonobject["id"]:
-                         for jsonobject3 in filterAttackPlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
-                             reportdescriptionlist[jsonobject["name"]] = jsonobject["description"].replace("###", "####")
-                             if jsonobject["name"] not in reportreferencelist.keys():
-                                 reportreferencelist[jsonobject["name"]] = []
-                             reportreferencelist[jsonobject["name"]].append(jsonobject3["id"])
-                         for jsonobject3 in filterMalwarePlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
-                              reportdescriptionlist[jsonobject["name"]] = jsonobject["description"].replace("###", "####")
-                              if jsonobject["name"] not in reportreferencelist.keys():
-                                  reportreferencelist[jsonobject["name"]] = []
-                              reportreferencelist[jsonobject["name"]].append(jsonobject3["id"])
-                         for jsonobject3 in filterToolPlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
-                              reportdescriptionlist[jsonobject["name"]] = jsonobject["description"].replace("###", "####")
-                              if jsonobject["name"] not in reportreferencelist.keys():
-                                  reportreferencelist[jsonobject["name"]] = []
-                              reportreferencelist[jsonobject["name"]].append(jsonobject3["id"])
+        for jsonobject2 in jsonobjects["objects"]:
+            if jsonobject2["type"] == "relationship":
+                if "source_ref" in jsonobject2.keys():
+                    if jsonobject2["source_ref"] == jsonobject["id"]:
+                        for jsonobject3 in filterAttackPlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
+                            reportdescriptionlist[jsonobject["name"]] = jsonobject["description"].replace("###", "####")
+                            if jsonobject["name"] not in reportreferencelist.keys():
+                                reportreferencelist[jsonobject["name"]] = []
+                            reportreferencelist[jsonobject["name"]].append(jsonobject3["id"])
+                        for jsonobject3 in filterMalwarePlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
+                            reportdescriptionlist[jsonobject["name"]] = jsonobject["description"].replace("###", "####")
+                            if jsonobject["name"] not in reportreferencelist.keys():
+                                reportreferencelist[jsonobject["name"]] = []
+                            reportreferencelist[jsonobject["name"]].append(jsonobject3["id"])
+                        for jsonobject3 in filterToolPlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
+                            reportdescriptionlist[jsonobject["name"]] = jsonobject["description"].replace("###", "####")
+                            if jsonobject["name"] not in reportreferencelist.keys():
+                                reportreferencelist[jsonobject["name"]] = []
+                            reportreferencelist[jsonobject["name"]].append(jsonobject3["id"])
     return (reportdescriptionlist, reportreferencelist)
 
 def buildReport(jsonobjects, debugflag, verboseflag, reportreferencelist):
