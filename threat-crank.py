@@ -67,11 +67,11 @@ def filterActor(jsonobjects, debugflag, actorspattern, industriespattern, region
 def filterAttackPlatform(jsonobjects, debugflag, targetreference, platformspattern):
     return filterPlatform(jsonobjects, debugflag, "attack-pattern", targetreference, platformspattern)
 
-def filterMalwarePlatform(jsonobjects, debugflag, targetreference, platformspattern):
-    return filterPlatform(jsonobjects, debugflag, "malware", targetreference, platformspattern)
-
 def filterToolPlatform(jsonobjects, debugflag, targetreference, platformspattern):
     return filterPlatform(jsonobjects, debugflag, "tool", targetreference, platformspattern)
+
+def filterMalwarePlatform(jsonobjects, debugflag, targetreference, platformspattern):
+    return filterPlatform(jsonobjects, debugflag, "malware", targetreference, platformspattern)
 
 def filterPlatform(jsonobjects, debugflag, objecttype, targetreference, platformspattern):
     newjsonobjects = []
@@ -218,12 +218,12 @@ def filterReportReferences(jsonobjects, debugflag, verboseflag, actorspattern, i
                             if jsonobject["name"] not in reportreferencelist.keys():
                                 reportreferencelist[jsonobject["name"]] = []
                             reportreferencelist[jsonobject["name"]].append(jsonobject3["id"])
-                        for jsonobject3 in filterMalwarePlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
+                        for jsonobject3 in filterToolPlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
                             reportdescriptionlist[jsonobject["name"]] = jsonobject["description"].replace("###", "####")
                             if jsonobject["name"] not in reportreferencelist.keys():
                                 reportreferencelist[jsonobject["name"]] = []
                             reportreferencelist[jsonobject["name"]].append(jsonobject3["id"])
-                        for jsonobject3 in filterToolPlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
+                        for jsonobject3 in filterMalwarePlatform(jsonobjects, debugflag, jsonobject2["target_ref"], platformspattern):
                             reportdescriptionlist[jsonobject["name"]] = jsonobject["description"].replace("###", "####")
                             if jsonobject["name"] not in reportreferencelist.keys():
                                 reportreferencelist[jsonobject["name"]] = []
@@ -276,7 +276,7 @@ def buildReport(jsonobjects, debugflag, verboseflag, reportreferencelist):
                                         if "url" in referenceobject.keys():
                                             if "description" in referenceobject.keys():
                                                 referencelist[referenceobject["url"]] = referenceobject["description"]
-            if jsonobject["type"] == "malware" or jsonobject["type"] == "tool":
+            if jsonobject["type"] == "tool" or jsonobject["type"] == "malware":
                 for reportreferenceid in reportreferencelist[reportreferencename]:
                     if jsonobject["id"] == reportreferenceid:
                         if debugflag == True:
