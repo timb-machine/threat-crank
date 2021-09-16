@@ -283,17 +283,26 @@ def filterReportReferences(jsonobjects, debugflag, verboseflag, actorspattern, i
     for jsonobject in filterObjectType(jsonobjects, debugflag, "relationship"):
         for jsonobject2 in filterReference(filterActor(jsonobjects, debugflag, actorspattern, industriespattern, regionspattern), debugflag, jsonobject["source_ref"]):
             for jsonobject3 in filterReference(filterAttackPlatform(jsonobjects, debugflag, platformspattern), debugflag, jsonobject["target_ref"]):
-                reportdescriptionlist[jsonobject2["name"]] = jsonobject2["description"].replace("###", "####")
+                if "description" in jsonobject2:
+                    reportdescriptionlist[jsonobject2["name"]] = jsonobject2["description"].replace("###", "####")
+                else:
+                    reportdescriptionlist[jsonobject2["name"]] = jsonobject2["name"] + " does not have a description"
                 if jsonobject2["name"] not in reportreferencelist.keys():
                     reportreferencelist[jsonobject2["name"]] = []
                 reportreferencelist[jsonobject2["name"]].append(jsonobject3["id"])
             for jsonobject3 in filterReference(filterTool(filterToolPlatform(jsonobjects, debugflag, platformspattern), debugflag, toolspattern), debugflag, jsonobject["target_ref"]):
-                reportdescriptionlist[jsonobject2["name"]] = jsonobject2["description"].replace("###", "####")
+                if "description" in jsonobject2:
+                    reportdescriptionlist[jsonobject2["name"]] = jsonobject2["description"].replace("###", "####")
+                else:
+                    reportdescriptionlist[jsonobject2["name"]] = jsonobject2["name"] + " does not have a description"
                 if jsonobject2["name"] not in reportreferencelist.keys():
                     reportreferencelist[jsonobject2["name"]] = []
                 reportreferencelist[jsonobject2["name"]].append(jsonobject3["id"])
             for jsonobject3 in filterReference(filterMalware(filterMalwarePlatform(jsonobjects, debugflag, platformspattern), debugflag, malwarepattern), debugflag, jsonobject["target_ref"]):
-                reportdescriptionlist[jsonobject2["name"]] = jsonobject2["description"].replace("###", "####")
+                if "description" in jsonobject2:
+                    reportdescriptionlist[jsonobject2["name"]] = jsonobject2["description"].replace("###", "####")
+                else:
+                    reportdescriptionlist[jsonobject2["name"]] = jsonobject2["name"] + " does not have a description"
                 if jsonobject2["name"] not in reportreferencelist.keys():
                     reportreferencelist[jsonobject2["name"]] = []
                 reportreferencelist[jsonobject2["name"]].append(jsonobject3["id"])
