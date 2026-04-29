@@ -30,13 +30,13 @@ Each of these will generate a full list based on the combined ATT&CK TTP project
 
     ./threat-crank.py -r ".* Russia .*" -p "Windows" -v
 
-* Generate a Gephi formatted list that can be used to draw the Equation groups kill chain in Gephi (“unified” forces all affected threat actors who share the same TTPs to share the nodes vs representing common TTPs per actor):
+* Generate a Gephi formatted list that can be used to draw the Equation groups kill chain in Gephi ("unified" forces all affected threat actors who share the same TTPs to share the nodes vs representing common TTPs per actor):
 
     ./threat-crank.py -G unified -a "Equation"
 
 * Generates 5 rounds of random kill chain picked form the TTPs of actors that target the financial services community:
 
-    ./threat-crank.py -W 5 -i “.* financial .*”
+    ./threat-crank.py -W 5 -i ".* financial .*"
 
 Note that the filter flags (-a, -i, -r and -p) can be used to filter irrespective of the output mode – these are just some examples. Filters are regexes so you can do more interesting things if you feel the need.
 
