@@ -1,42 +1,40 @@
 # threat-crank
 
-This repository contains all of the scripts and source code for Threat Crank.
-
-More details can be found at Portcullis Labs.
-
-For any queries about the contents of this repository please contact [Security Advisory EMEAR](mailto:css-adv-outreach@cisco.com).
-
-* What is Threat Crank? Threat Crank makes useful information from the ATT&CK TTP project
+Threat Crank makes useful information from the ATT&CK TTP project
 
 * What can it do? Currently it has 3 modes of operation:
 
- 1. Report mode – generates a formatted text file containing actors and associated TTPs:
-  * Kill chain phases
-  * Targeted platforms
-  * Affected defences
-  * Sources of useful telemetry
-  * Referenced third party TTP sources
-  * Attack tools used
-  * Referenced third party tool references
- 2. Wargame mode – generates a random kill chain
- 3. Gephi mode – outputs a Gephi formatted list that can be used to construct a directed graph of the kill chain including:
-  * Threat groups
-  * Kill chain phases
-  * TTPs
+    1. Report mode – generates a formatted text file containing actors and associated TTPs:
+        * Kill chain phases
+        * Targeted platforms
+        * Affected defences
+        * Sources of useful telemetry
+        * Referenced third party TTP sources
+        * Attack tools used
+        * Referenced third party tool references
+    2. Wargame mode – generates a random kill chain
+    3. Gephi mode – outputs a Gephi formatted list that can be used to construct a directed graph of the kill chain including:
+        * Threat groups
+        * Kill chain phases
+        * TTPs
+
+For any queries about the contents of this repository please contact [Security Advisory EMEAR](mailto:css-adv-outreach@cisco.com).
+
+## Usage
 
 Each of these will generate a full list based on the combined ATT&CK TTP project or you can apply various filters including actors, targeted industries, targeted regions, targeted platforms. Three examples can be seen below:
 
 * Generate a (verbose, including descriptions) threat report of actors that operate in Russia and target Windows:
 
-    ./threat-crank.py -r ".* Russia .*" -p "Windows" -v
+```./threat-crank.py -r ".* Russia .*" -p "Windows" -v```
 
 * Generate a Gephi formatted list that can be used to draw the Equation groups kill chain in Gephi ("unified" forces all affected threat actors who share the same TTPs to share the nodes vs representing common TTPs per actor):
 
-    ./threat-crank.py -G unified -a "Equation"
+```./threat-crank.py -G unified -a "Equation"```
 
 * Generates 5 rounds of random kill chain picked form the TTPs of actors that target the financial services community:
 
-    ./threat-crank.py -W 5 -i ".* financial .*"
+```./threat-crank.py -W 5 -i ".* financial .*"```
 
 Note that the filter flags (-a, -i, -r and -p) can be used to filter irrespective of the output mode – these are just some examples. Filters are regexes so you can do more interesting things if you feel the need.
 
