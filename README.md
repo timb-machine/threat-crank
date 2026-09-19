@@ -1,22 +1,22 @@
 # threat-crank
 
-Threat Crank makes useful information from the ATT&CK TTP project
+This repository contains a tool to make useful information from the ATT&CK TTP project.
 
-* What can it do? Currently it has 3 modes of operation:
+What can it do? Currently it has 3 modes of operation:
 
-    1. Report mode – generates a formatted text file containing actors and associated TTPs:
-        * Kill chain phases
-        * Targeted platforms
-        * Affected defences
-        * Sources of useful telemetry
-        * Referenced third party TTP sources
-        * Attack tools used
-        * Referenced third party tool references
-    2. Wargame mode – generates a random kill chain
-    3. Gephi mode – outputs a Gephi formatted list that can be used to construct a directed graph of the kill chain including:
-        * Threat groups
-        * Kill chain phases
-        * TTPs
+1. Report mode – generates a formatted text file containing actors and associated TTPs:
+    * Kill chain phases
+    * Targeted platforms
+    * Affected defences
+    * Sources of useful telemetry
+    * Referenced third party TTP sources
+    * Attack tools used
+    * Referenced third party tool references
+2. Wargame mode – generates a random kill chain
+3. Gephi mode – outputs a Gephi formatted list that can be used to construct a directed graph of the kill chain including:
+    * Threat groups
+    * Kill chain phases
+    * TTPs
 
 For any queries about the contents of this repository please contact [Security Advisory EMEAR](mailto:css-adv-outreach@cisco.com).
 
